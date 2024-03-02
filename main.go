@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path"
 
@@ -10,17 +11,16 @@ import (
 	"golang.org/x/time/rate"
 )
 
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
+const (
+	rateLimitR = rate.Limit(2)
+	rateLimitB = 1
+)
 
 type Config struct {
-	BaseUrl    string `json:"base_url"`
+	BaseURL    string `json:"base_url"`
 	Token      string `json:"token"`
-	UserId     int    `json:"user_id"`
-	ProjectIds []int  `json:"project_ids"`
+	UserID     int    `json:"user_id"`
+	ProjectIDs []int  `json:"project_ids"`
 }
 
 func main() {
@@ -38,31 +38,41 @@ func main() {
 
 	client, err := gitlab.NewClient(
 		config.Token,
-		gitlab.WithBaseURL(config.BaseUrl),
-		gitlab.WithCustomLimiter(rate.NewLimiter(rate.Limit(2), 1)),
+		gitlab.WithBaseURL(config.BaseURL),
+		gitlab.WithCustomLimiter(rate.NewLimiter(rateLimitR, rateLimitB)),
 	)
 	must(err)
 
-	gitlab := NewXanzyGitlab(client, config.UserId, config.ProjectIds)
+	gitlab := NewXanzyGitlab(client, config.UserID, config.ProjectIDs)
 
 	app := NewApp(gitlab)
-	state, err = app.Run(state)
+	state, err = app.Run(state, os.Stdout)
 	must(err)
 
 	must(saveState(statePath, state))
 }
 
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func loadConfig(path string) (Config, error) {
 	var config Config
 
-	f, err := os.Open(path)
+	file, err := os.Open(path)
 	if err != nil {
-		return config, err
+		return config, fmt.Errorf("unable to open %q config file: %w", path, err)
 	}
-	defer f.Close()
+	defer file.Close()
 
-	err = json.NewDecoder(f).Decode(&config)
-	return config, err
+	err = json.NewDecoder(file).Decode(&config)
+	if err != nil {
+		return config, fmt.Errorf("unable to parse %q config file: %w", path, err)
+	}
+
+	return config, nil
 }
 
 func loadState(path string) (State, error) {
@@ -72,24 +82,34 @@ func loadState(path string) (State, error) {
 		return state, nil
 	}
 
-	f, err := os.Open(path)
+	file, err := os.Open(path)
 	if err != nil {
-		return state, err
+		return state, fmt.Errorf("unable to open %q state file: %w", path, err)
 	}
-	defer f.Close()
+	defer file.Close()
 
-	err = json.NewDecoder(f).Decode(&state)
-	return state, err
+	err = json.NewDecoder(file).Decode(&state)
+	if err != nil {
+		return state, fmt.Errorf("unable to parse %q state file: %w", path, err)
+	}
+
+	return state, nil
 }
 
 func saveState(path string, state State) error {
-	f, err := os.Create(path)
+	file, err := os.Create(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to create/truncate %q state file: %w", path, err)
 	}
+	defer file.Close()
 
-	encoder := json.NewEncoder(f)
+	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
 
-	return encoder.Encode(state)
+	err = encoder.Encode(state)
+	if err != nil {
+		return fmt.Errorf("unable to save %q state file: %w", path, err)
+	}
+
+	return nil
 }

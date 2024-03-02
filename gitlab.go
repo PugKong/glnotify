@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/xanzy/go-gitlab"
 )
 
@@ -18,15 +20,15 @@ type Note struct {
 
 type XanzyGitlab struct {
 	client     *gitlab.Client
-	userId     int
-	projectIds []int
+	userID     int
+	projectIDs []int
 }
 
-func NewXanzyGitlab(client *gitlab.Client, userId int, projectIds []int) *XanzyGitlab {
+func NewXanzyGitlab(client *gitlab.Client, userID int, projectIDs []int) *XanzyGitlab {
 	return &XanzyGitlab{
 		client:     client,
-		userId:     userId,
-		projectIds: projectIds,
+		userID:     userID,
+		projectIDs: projectIDs,
 	}
 }
 
@@ -35,13 +37,13 @@ func (x *XanzyGitlab) ListOpenedMergeRequests() ([]MergeRequest, error) {
 	scope := "all"
 
 	result := make([]MergeRequest, 0)
-	for _, projectId := range x.projectIds {
-		mrs, _, err := x.client.MergeRequests.ListProjectMergeRequests(projectId, &gitlab.ListProjectMergeRequestsOptions{
+	for _, projectID := range x.projectIDs {
+		mrs, _, err := x.client.MergeRequests.ListProjectMergeRequests(projectID, &gitlab.ListProjectMergeRequestsOptions{
 			State: &state,
 			Scope: &scope,
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to fetch merge request for %d project: %w", projectID, err)
 		}
 
 		for _, mr := range mrs {
@@ -53,18 +55,19 @@ func (x *XanzyGitlab) ListOpenedMergeRequests() ([]MergeRequest, error) {
 			})
 		}
 	}
+
 	return result, nil
 }
 
 func (x *XanzyGitlab) ListMergeRequestNotes(mr MergeRequest) ([]Note, error) {
 	notes, _, err := x.client.Notes.ListMergeRequestNotes(mr.ProjectID, mr.IID, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to fetch notes for %d merge request: %w", mr.IID, err)
 	}
 
 	result := make([]Note, 0, len(notes))
 	for _, note := range notes {
-		if note.System || note.Author.ID == x.userId {
+		if note.System || note.Author.ID == x.userID {
 			continue
 		}
 
@@ -73,5 +76,6 @@ func (x *XanzyGitlab) ListMergeRequestNotes(mr MergeRequest) ([]Note, error) {
 			Author: note.Author.Name,
 		})
 	}
+
 	return result, nil
 }

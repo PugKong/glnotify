@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"slices"
 	"strings"
 )
@@ -13,7 +14,7 @@ type Gitlab interface {
 
 type NoteID string
 
-func NewNoteId(mr MergeRequest, note Note) NoteID {
+func NewNoteID(mr MergeRequest, note Note) NoteID {
 	return NoteID(fmt.Sprintf("%d:%d:%d", mr.ProjectID, mr.IID, note.ID))
 }
 
@@ -35,24 +36,24 @@ func NewApp(gitlab Gitlab) *App {
 	return &App{gitlab: gitlab}
 }
 
-func (a *App) Run(state State) (State, error) {
-	mrs, err := a.gitlab.ListOpenedMergeRequests()
+func (a *App) Run(state State, out io.Writer) (State, error) {
+	mergeRequests, err := a.gitlab.ListOpenedMergeRequests()
 	if err != nil {
-		return state, err
+		return state, fmt.Errorf("unable to fetch merge requests: %w", err)
 	}
 
 	newState := NewState()
-	for _, mr := range mrs {
-		notes, err := a.gitlab.ListMergeRequestNotes(mr)
+	for _, mergeRequest := range mergeRequests {
+		notes, err := a.gitlab.ListMergeRequestNotes(mergeRequest)
 		if err != nil {
-			return state, err
+			return state, fmt.Errorf("unable to load notes for merge request: %w", err)
 		}
 
 		newCommentsBy := make([]string, 0, len(notes))
 		for _, note := range notes {
-			noteId := NewNoteId(mr, note)
-			newState.Notes[noteId] = struct{}{}
-			if _, ok := state.Notes[noteId]; ok {
+			noteID := NewNoteID(mergeRequest, note)
+			newState.Notes[noteID] = struct{}{}
+			if _, ok := state.Notes[noteID]; ok {
 				continue
 			}
 
@@ -63,10 +64,10 @@ func (a *App) Run(state State) (State, error) {
 		slices.Sort(newCommentsBy)
 
 		if len(newCommentsBy) > 0 {
-			fmt.Println("MR:", mr.Title)
-			fmt.Println("Commented by:", strings.Join(newCommentsBy, ", "))
-			fmt.Println(mr.URL)
-			fmt.Println("")
+			fmt.Fprintln(out, "MR:", mergeRequest.Title)
+			fmt.Fprintln(out, "Commented by:", strings.Join(newCommentsBy, ", "))
+			fmt.Fprintln(out, mergeRequest.URL)
+			fmt.Fprintln(out, "")
 		}
 	}
 
