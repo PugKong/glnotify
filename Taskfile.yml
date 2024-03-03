@@ -1,0 +1,8 @@
+version: '3'
+
+tasks:
+  lint:
+    desc: Run code linters to check for errors and improve code quality
+    cmds:
+      - typos
+      - golangci-lint run
