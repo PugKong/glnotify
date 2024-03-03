@@ -1,5 +1,12 @@
 # GLNotify
 
+[![build](https://github.com/PugKong/glnotify/actions/workflows/release.yml/badge.svg)](https://github.com/PugKong/glnotify/actions/workflows/release.yml)
+[![build](https://github.com/PugKong/glnotify/actions/workflows/test.yml/badge.svg)](https://github.com/PugKong/glnotify/actions/workflows/test.yml)
+[![Coverage Status](https://coveralls.io/repos/github/PugKong/glnotify/badge.svg?branch=master)](https://coveralls.io/github/PugKong/glnotify?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/PugKong/glnotify)](https://goreportcard.com/report/github.com/PugKong/glnotify)
+[![LoC](https://tokei.rs/b1/github/PugKong/glnotify)](https://github.com/PugKong/glnotify)
+[![Release](https://img.shields.io/github/release/PugKong/glnotify.svg?style=flat-square)](https://github.com/PugKong/glnotify/releases/latest)
+
 A CLI tool to get updates from your gitlab projects.
 At the moment it will only notify you about new comments in merge requests.
 
