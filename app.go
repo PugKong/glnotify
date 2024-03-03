@@ -9,23 +9,33 @@ import (
 
 type Gitlab interface {
 	ListOpenedMergeRequests() ([]MergeRequest, error)
-	ListMergeRequestNotes(mr MergeRequest) ([]Note, error)
-}
-
-type NoteID string
-
-func NewNoteID(mr MergeRequest, note Note) NoteID {
-	return NoteID(fmt.Sprintf("%d:%d:%d", mr.ProjectID, mr.IID, note.ID))
+	ListMergeRequestNotes(mergeRequest MergeRequest) ([]Note, error)
 }
 
 type State struct {
-	Notes map[NoteID]struct{} `json:"notes"`
+	Notes map[string]struct{} `json:"notes"`
 }
 
 func NewState() State {
 	return State{
-		Notes: make(map[NoteID]struct{}),
+		Notes: make(map[string]struct{}),
 	}
+}
+
+func (s *State) HasNote(mergeRequest MergeRequest, note Note) bool {
+	key := s.createNoteKey(mergeRequest, note)
+	_, ok := s.Notes[key]
+
+	return ok
+}
+
+func (s *State) AddNote(mergeRequest MergeRequest, note Note) {
+	key := s.createNoteKey(mergeRequest, note)
+	s.Notes[key] = struct{}{}
+}
+
+func (s *State) createNoteKey(mergeRequest MergeRequest, note Note) string {
+	return fmt.Sprintf("%d:%d:%d", mergeRequest.ProjectID, mergeRequest.IID, note.ID)
 }
 
 type App struct {
@@ -51,9 +61,8 @@ func (a *App) Run(state State, out io.Writer) (State, error) {
 
 		newCommentsBy := make([]string, 0, len(notes))
 		for _, note := range notes {
-			noteID := NewNoteID(mergeRequest, note)
-			newState.Notes[noteID] = struct{}{}
-			if _, ok := state.Notes[noteID]; ok {
+			newState.AddNote(mergeRequest, note)
+			if state.HasNote(mergeRequest, note) {
 				continue
 			}
 

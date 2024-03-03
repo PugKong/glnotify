@@ -18,3 +18,4 @@ linters:
     - tagliatelle
     - depguard
     - exhaustruct
+    - paralleltest

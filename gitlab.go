@@ -59,10 +59,10 @@ func (x *XanzyGitlab) ListOpenedMergeRequests() ([]MergeRequest, error) {
 	return result, nil
 }
 
-func (x *XanzyGitlab) ListMergeRequestNotes(mr MergeRequest) ([]Note, error) {
-	notes, _, err := x.client.Notes.ListMergeRequestNotes(mr.ProjectID, mr.IID, nil)
+func (x *XanzyGitlab) ListMergeRequestNotes(mergeRequest MergeRequest) ([]Note, error) {
+	notes, _, err := x.client.Notes.ListMergeRequestNotes(mergeRequest.ProjectID, mergeRequest.IID, nil)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch notes for %d merge request: %w", mr.IID, err)
+		return nil, fmt.Errorf("unable to fetch notes for %d merge request: %w", mergeRequest.IID, err)
 	}
 
 	result := make([]Note, 0, len(notes))
