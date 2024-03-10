@@ -19,3 +19,4 @@ linters:
     - depguard
     - exhaustruct
     - paralleltest
+    - funlen

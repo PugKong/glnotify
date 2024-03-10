@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -10,12 +11,12 @@ import (
 
 type GitlabFake struct {
 	mergeRequests      []MergeRequest
-	mergeRequestsNotes map[MergeRequest][]Note
+	mergeRequestsNotes map[string][]Note
 }
 
 func NewGitlabFake() *GitlabFake {
 	return &GitlabFake{
-		mergeRequestsNotes: make(map[MergeRequest][]Note),
+		mergeRequestsNotes: make(map[string][]Note),
 	}
 }
 
@@ -24,7 +25,8 @@ func (g *GitlabFake) AddMergeRequest(mergeRequest MergeRequest) {
 }
 
 func (g *GitlabFake) AddMergeRequestNote(mergeRequest MergeRequest, note Note) {
-	g.mergeRequestsNotes[mergeRequest] = append(g.mergeRequestsNotes[mergeRequest], note)
+	key := createMergeRequestKey(mergeRequest)
+	g.mergeRequestsNotes[key] = append(g.mergeRequestsNotes[key], note)
 }
 
 func (g *GitlabFake) ListOpenedMergeRequests() ([]MergeRequest, error) {
@@ -32,7 +34,9 @@ func (g *GitlabFake) ListOpenedMergeRequests() ([]MergeRequest, error) {
 }
 
 func (g *GitlabFake) ListMergeRequestNotes(mergeRequest MergeRequest) ([]Note, error) {
-	return g.mergeRequestsNotes[mergeRequest], nil
+	key := createMergeRequestKey(mergeRequest)
+
+	return g.mergeRequestsNotes[key], nil
 }
 
 func TestApp_Run(t *testing.T) {
@@ -56,15 +60,49 @@ func TestApp_Run(t *testing.T) {
 		out := bytes.NewBuffer([]byte{})
 		want := fmt.Sprintf("MR: %s\nCommented by: %s\n%s\n\n", mergeRequest.Title, note.Author, mergeRequest.URL)
 
-		app := NewApp(gitlab)
-		state, err := app.Run(state, out)
+		app := NewApp(out, gitlab)
+		state, err := app.Run(state)
 		require.NoError(t, err)
 		require.Equal(t, want, out.String())
 
 		out.Reset()
 		want = ""
 
-		_, err = app.Run(state, out)
+		_, err = app.Run(state)
+		require.NoError(t, err)
+		require.Equal(t, want, out.String())
+	})
+
+	t.Run("it prints information about new labels", func(t *testing.T) {
+		mergeRequest := MergeRequest{
+			ProjectID: 1,
+			IID:       2,
+			URL:       "https://example.com",
+			Title:     "MR Title",
+			Labels:    []string{"foo", "bar"},
+		}
+
+		gitlab := NewGitlabFake()
+		gitlab.AddMergeRequest(mergeRequest)
+
+		state := NewState()
+		out := bytes.NewBuffer([]byte{})
+		want := fmt.Sprintf(
+			"MR: %s\nLabeled: %s\n%s\n\n",
+			mergeRequest.Title,
+			strings.Join(mergeRequest.Labels, ", "),
+			mergeRequest.URL,
+		)
+
+		app := NewApp(out, gitlab)
+		state, err := app.Run(state)
+		require.NoError(t, err)
+		require.Equal(t, want, out.String())
+
+		out.Reset()
+		want = ""
+
+		_, err = app.Run(state)
 		require.NoError(t, err)
 		require.Equal(t, want, out.String())
 	})

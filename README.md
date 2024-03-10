@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/release/PugKong/glnotify.svg?style=flat-square)](https://github.com/PugKong/glnotify/releases/latest)
 
 A CLI tool to get updates from your gitlab projects.
-At the moment it will only notify you about new comments in merge requests.
+At the moment it will only notify you about new comments and labels in merge requests.
 
 ## Install
 

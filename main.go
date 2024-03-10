@@ -45,8 +45,8 @@ func main() {
 
 	gitlab := NewXanzyGitlab(client, config.UserID, config.ProjectIDs)
 
-	app := NewApp(gitlab)
-	state, err = app.Run(state, os.Stdout)
+	app := NewApp(os.Stdout, gitlab)
+	state, err = app.Run(state)
 	must(err)
 
 	must(saveState(statePath, state))

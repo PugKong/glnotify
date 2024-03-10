@@ -7,15 +7,16 @@ import (
 )
 
 type MergeRequest struct {
-	ProjectID int
-	IID       int
-	URL       string
-	Title     string
+	ProjectID int      `json:"project_id"`
+	IID       int      `json:"iid"`
+	URL       string   `json:"url"`
+	Title     string   `json:"title"`
+	Labels    []string `json:"labels"`
 }
 
 type Note struct {
-	ID     int
-	Author string
+	ID     int    `json:"id"`
+	Author string `json:"author"`
 }
 
 type XanzyGitlab struct {
@@ -38,20 +39,24 @@ func (x *XanzyGitlab) ListOpenedMergeRequests() ([]MergeRequest, error) {
 
 	result := make([]MergeRequest, 0)
 	for _, projectID := range x.projectIDs {
-		mrs, _, err := x.client.MergeRequests.ListProjectMergeRequests(projectID, &gitlab.ListProjectMergeRequestsOptions{
-			State: &state,
-			Scope: &scope,
-		})
+		mergeRequests, _, err := x.client.MergeRequests.ListProjectMergeRequests(
+			projectID,
+			&gitlab.ListProjectMergeRequestsOptions{
+				State: &state,
+				Scope: &scope,
+			},
+		)
 		if err != nil {
 			return nil, fmt.Errorf("unable to fetch merge request for %d project: %w", projectID, err)
 		}
 
-		for _, mr := range mrs {
+		for _, mergeRequest := range mergeRequests {
 			result = append(result, MergeRequest{
-				ProjectID: mr.ProjectID,
-				IID:       mr.IID,
-				URL:       mr.WebURL,
-				Title:     mr.Title,
+				ProjectID: mergeRequest.ProjectID,
+				IID:       mergeRequest.IID,
+				URL:       mergeRequest.WebURL,
+				Title:     mergeRequest.Title,
+				Labels:    mergeRequest.Labels,
 			})
 		}
 	}

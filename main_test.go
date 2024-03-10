@@ -41,8 +41,7 @@ func TestLoadState(t *testing.T) {
 		require.NoError(t, err, "failed to create temp file")
 		defer file.Close()
 
-		state := NewState()
-		state.AddNote(MergeRequest{}, Note{})
+		state := NewState(NewMergeRequestState(MergeRequest{}, nil))
 
 		err = json.NewEncoder(file).Encode(state)
 		require.NoError(t, err, "failed to write to temp file")
@@ -57,8 +56,7 @@ func TestSaveState(t *testing.T) {
 	t.Run("it saves state", func(t *testing.T) {
 		path := path.Join(t.TempDir(), "state.json")
 
-		state := NewState()
-		state.AddNote(MergeRequest{}, Note{})
+		state := NewState(NewMergeRequestState(MergeRequest{}, nil))
 
 		err := saveState(path, state)
 		require.NoError(t, err)
