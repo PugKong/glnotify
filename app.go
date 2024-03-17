@@ -76,8 +76,8 @@ func (a *App) printMergeRequest(prevState, curState MergeRequestState) {
 
 		newCommentsBy = append(newCommentsBy, note.Author)
 	}
-	newCommentsBy = slices.Compact(newCommentsBy)
 	slices.Sort(newCommentsBy)
+	newCommentsBy = slices.Compact(newCommentsBy)
 
 	if len(newLabels) == 0 && len(newCommentsBy) == 0 {
 		return

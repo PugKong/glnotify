@@ -47,18 +47,16 @@ func TestApp_Run(t *testing.T) {
 			URL:       "https://example.com",
 			Title:     "MR Title",
 		}
-		note := Note{
-			ID:     3,
-			Author: "John Doe",
-		}
 
 		gitlab := NewGitlabFake()
 		gitlab.AddMergeRequest(mergeRequest)
-		gitlab.AddMergeRequestNote(mergeRequest, note)
+		gitlab.AddMergeRequestNote(mergeRequest, Note{ID: 3, Author: "John Doe"})
+		gitlab.AddMergeRequestNote(mergeRequest, Note{ID: 4, Author: "Jane Doe"})
+		gitlab.AddMergeRequestNote(mergeRequest, Note{ID: 5, Author: "John Doe"})
 
 		state := NewState()
 		out := bytes.NewBuffer([]byte{})
-		want := fmt.Sprintf("MR: %s\nCommented by: %s\n%s\n\n", mergeRequest.Title, note.Author, mergeRequest.URL)
+		want := fmt.Sprintf("MR: %s\nCommented by: %s\n%s\n\n", mergeRequest.Title, "Jane Doe, John Doe", mergeRequest.URL)
 
 		app := NewApp(out, gitlab)
 		state, err := app.Run(state)
