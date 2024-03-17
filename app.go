@@ -61,7 +61,7 @@ func (a *App) printMergeRequest(prevState, curState MergeRequestState) {
 	mergeRequest := curState.MergeRequest
 	newLabels := make([]string, 0, len(mergeRequest.Labels))
 	for _, label := range mergeRequest.Labels {
-		if slices.Contains(prevState.MergeRequest.Labels, label) {
+		if prevState.HasLabel(label) {
 			continue
 		}
 

@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 type MergeRequestState struct {
 	MergeRequest MergeRequest `json:"merge_request"`
@@ -17,6 +20,10 @@ func NewMergeRequestState(mergeRequest MergeRequest, notes []Note) MergeRequestS
 		MergeRequest: mergeRequest,
 		Notes:        notesMap,
 	}
+}
+
+func (m MergeRequestState) HasLabel(label string) bool {
+	return slices.Contains(m.MergeRequest.Labels, label)
 }
 
 func (m MergeRequestState) HasNote(note Note) bool {
